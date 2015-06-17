@@ -4,14 +4,13 @@ import (
   "bytes"
   "fmt"
   "os"
-  fsnotify "gopkg.in/fsnotify.v1"
 )
 
 type LogWatcher struct {
+  // OS-dependent functionality.
+  sys SysWatcher
   // Path to the log file that will be watched.
   logFile string
-  // Filesystem notifications client.
-  fsWatcher *fsnotify.Watcher
   // Sink for the lines written to the log file.
   logLines chan []byte
   // Tells the log watch loop when to stop.
@@ -29,17 +28,11 @@ type LogWatcher struct {
 // Init sets up the filesystem watcher.
 func (l *LogWatcher) Init(logFile string) error {
   l.logFile = logFile
-  var err error
-  l.fsWatcher, err = fsnotify.NewWatcher()
-  if err != nil {
-    return err
-  }
   l.logLines = make(chan []byte, 1024)
-
   l.readOffset = -1
   l.lineBuffer = make([]byte, 4096)[:0]
   l.errors = make(chan error, 5)
-  return nil
+  return l.sys.Init(l)
 }
 
 // LogLines returns the channel that produces Hearthstone's logging output.
@@ -57,51 +50,19 @@ func (l *LogWatcher) Start() error {
   if err := l.handleWrite(); err != nil {
     return err
   }
-  if err := l.fsWatcher.Add(l.logFile); err != nil {
+  if err := l.sys.Start(l.logFile); err != nil {
     return err
   }
-  go l.listenLoop()
+  go l.sys.ListenLoop()
   return nil
 }
 
 // Stop causes the filesystem listener to break out of its loop.
 func (l *LogWatcher) Stop() error {
-  if err := l.fsWatcher.Remove(l.logFile); err != nil {
+  if err := l.sys.Stop(l.logFile); err != nil {
     return err
   }
   l.commands <- 1
-  return nil
-}
-
-// listenLoop repeatedly listens for filesystem events and acts on them.
-func (l *LogWatcher) listenLoop() {
-  for {
-    select {
-    case fsEvent := <- l.fsWatcher.Events:
-      if err := l.handleEvent(&fsEvent); err != nil {
-        l.errors <- err
-      }
-    case fsError := <- l.fsWatcher.Errors:
-      l.errors <- fsError
-    case command := <- l.commands:
-      if command == 1 {
-        break
-      }
-    }
-  }
-}
-
-func (l *LogWatcher) handleEvent(event *fsnotify.Event) error {
-  switch event.Op {
-  case fsnotify.Write:
-    return l.handleWrite()
-  case fsnotify.Chmod:
-    // NOTE: Chmod tends to happen when the game starts and when a match
-    //       starts. It might be associated with the file getting truncated.
-    //       For now, treating it as a write seems to work.
-    return l.handleWrite()
-  }
-  l.errors <- fmt.Errorf("Unexpected event: %v\n", event)
   return nil
 }
 
@@ -127,6 +88,8 @@ func (l *LogWatcher) handleWrite() error {
     // The watcher is just getting started.
     l.readOffset = logSize
   }
+
+  fmt.Printf("Reading from %d to %d\n", l.readOffset, logSize)
 
   for l.readOffset < logSize {
     readSize := logSize - l.readOffset
