@@ -5,6 +5,7 @@ import (
   "crypto/rand"
   "encoding/base64"
   "encoding/json"
+  "fmt"
   "io/ioutil"
   "net/http"
   "strings"
@@ -13,6 +14,7 @@ import (
 // The JSON response returned by a GET request to the HTTP endpoint.
 type ServerConfig struct {
   Categories []string
+  Error string
 }
 
 // The logic for uploading logging output to a HTTP endpoint.
@@ -72,17 +74,20 @@ func (u *Uploader) FetchConfig() error {
 
   response, err := u.httpClient.Do(request)
   if err != nil {
-    return err
+    return fmt.Errorf("Error communicating to server: %v", err)
   }
 
   jsonBytes, err := ioutil.ReadAll(response.Body)
   response.Body.Close()
   if err != nil {
-    return err
+    return fmt.Errorf("Error reading server response: %v", err)
   }
 
   if err = json.Unmarshal(jsonBytes, &u.ServerConfig); err != nil {
-    return err
+    return fmt.Errorf("Error decoding server JSON: %v", err)
+  }
+  if u.ServerConfig.Error != "" {
+    return fmt.Errorf("Server error: %s", u.ServerConfig.Error)
   }
 
   return nil
