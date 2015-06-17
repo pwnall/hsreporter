@@ -31,8 +31,8 @@ func DefaultLogFile() string {
     } else {
       programFiles = "Program Files"
     }
-    return path.Join(programFiles, "Blizzard", "Hearthstone",
-        "Hearthstone_data", "output_log.txt")
+    return path.Join(programFiles, "Hearthstone", "Hearthstone_data",
+        "output_log.txt")
   }
 
   // OSX.
