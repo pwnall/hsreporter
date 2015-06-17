@@ -27,9 +27,9 @@ func DefaultLogFile() string {
   if runtime.GOOS == "windows" {
     var programFiles string
     if runtime.GOARCH == "amd64" {
-      programFiles = "C:\\Program Files (x86)"
+      programFiles = path.Join("C:", "Program Files (x86)")
     } else {
-      programFiles = "C:\\Program Files"
+      programFiles = path.Join("C:", "Program Files")
     }
     return path.Join(programFiles, "Hearthstone", "Hearthstone_data",
         "output_log.txt")
