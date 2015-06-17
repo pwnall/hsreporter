@@ -95,6 +95,11 @@ func (l *LogWatcher) handleEvent(event *fsnotify.Event) error {
   switch event.Op {
   case fsnotify.Write:
     return l.handleWrite()
+  case fsnotify.Chmod:
+    // NOTE: Chmod tends to happen when the game starts and when a match
+    //       starts. It might be associated with the file getting truncated.
+    //       For now, treating it as a write seems to work.
+    return l.handleWrite()
   }
   l.errors <- fmt.Errorf("Unexpected event: %v\n", event)
   return nil
