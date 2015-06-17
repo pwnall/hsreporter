@@ -2,7 +2,7 @@ package reporter
 
 import (
   "os"
-  "path"
+  "path/filepath"
   "runtime"
 )
 
@@ -15,9 +15,9 @@ func DefaultConfigFile() string {
     configRoot = os.Getenv("LOCALAPPDATA")
   } else {
     // OSX.
-    configRoot = path.Join(os.Getenv("HOME"), "Library", "Preferences")
+    configRoot = filepath.Join(os.Getenv("HOME"), "Library", "Preferences")
   }
-  return path.Join(configRoot, "Blizzard", "Hearthstone", "log.config")
+  return filepath.Join(configRoot, "Blizzard", "Hearthstone", "log.config")
 }
 
 // DefaultLogPath returns the path to Hearthstone's logging output file.
@@ -27,14 +27,15 @@ func DefaultLogFile() string {
   if runtime.GOOS == "windows" {
     var programFiles string
     if runtime.GOARCH == "amd64" {
-      programFiles = path.Join("C:", "Program Files (x86)")
+      programFiles = filepath.Join("C:", "Program Files (x86)")
     } else {
-      programFiles = path.Join("C:", "Program Files")
+      programFiles = filepath.Join("C:", "Program Files")
     }
-    return path.Join(programFiles, "Hearthstone", "Hearthstone_data",
+    return filepath.Join(programFiles, "Hearthstone", "Hearthstone_data",
         "output_log.txt")
   }
 
   // OSX.
-  return path.Join(os.Getenv("HOME"), "Library", "Logs", "Unity", "Player.log")
+  return filepath.Join(os.Getenv("HOME"), "Library", "Logs", "Unity",
+      "Player.log")
 }
