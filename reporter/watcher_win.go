@@ -58,3 +58,29 @@ func (l *LogWatcher) handleWrite() error {
 
   return err
 }
+
+// reportLine sends the line information over the channel.
+func (l *LogWatcher) reportLine(line []byte) {
+  // Skip lines that don't start with a [. All lines must end in a newline, so
+  // they should be at least 2 bytes long.
+  if len(line) < 2 || line[0] != byte('[') {
+    return
+  }
+
+  // NOTE: We copy the slice because its underlying buffer is the line buffer,
+  //       which changes often.
+  // TODO(pwnall): Consider cutting slices from large pools.
+  var lineCopy []byte
+  if line[len(line) - 2] == byte('\r') {
+    // Hearthstone uses Windows' CR+LF (\r\n) line ending convention. We switch
+    // to UNIX line endings (\n) because otherwise \r would just burn bandwidth
+    // and require extra processing logic on the server.
+    lineCopy = make([]byte, len(line) - 1)
+    copy(lineCopy, line[:(len(line) - 1)])
+    lineCopy[len(line) - 2] = line[len(line) - 1]
+  } else {
+    lineCopy = make([]byte, len(line))
+    copy(lineCopy, line)
+  }
+  l.logLines <- lineCopy
+}

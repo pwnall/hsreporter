@@ -36,3 +36,18 @@ func (l *LogWatcher) handleWrite() error {
 
   return l.tailLog()
 }
+
+// reportLine sends the line information over the channel.
+func (l *LogWatcher) reportLine(line []byte) {
+  if len(line) == 0 || line[0] != byte('[') {
+    // Skip lines that don't start with a [
+    return
+  }
+
+  // NOTE: We copy the slice because its underlying buffer is the line buffer,
+  //       which changes often.
+  // TODO(pwnall): Consider cutting slices from large pools.
+  lineCopy := make([]byte, len(line))
+  copy(lineCopy, line)
+  l.logLines <- lineCopy
+}
