@@ -1,8 +1,9 @@
-// +build arm
+// +build !arm
 
 package reporter
 
 import (
+  "fmt"
   notify "github.com/rjeczalik/notify"
 )
 
@@ -29,7 +30,8 @@ func (w *SysWatcher) Start(logFile string) error {
 
 // Stop stops the OS-dependent filesystem listener.
 func (w *SysWatcher) Stop(logFile string) error {
-  return notify.Stop(w.fsEvents)
+  notify.Stop(w.fsEvents)
+  return nil
 }
 
 // ListenLoop repeatedly listens for filesystem events and acts on them.
@@ -37,6 +39,7 @@ func (w *SysWatcher) ListenLoop() {
   for {
     select {
     case fsEvent := <- w.fsEvents:
+      fmt.Printf("FS event: %v\n", fsEvent)
       if err := w.logWatcher.handleWrite(); err != nil {
         w.logWatcher.errors <- err
       }
