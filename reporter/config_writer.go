@@ -23,7 +23,9 @@ func WriteConfigFile(configFile string, logCategories []string) error {
   defer file.Close()
   for _, category := range logCategories {
     _, err := fmt.Fprintf(file,
-        "[%s]\nLogLevel=1\nConsolePrinting=true\n", category)
+        "[%s]\nLogLevel=1\nFilePrinting=false\n" +
+        "ConsolePrinting=true\nScreenPrinting=true\n",
+        category)
     if err != nil {
       return err
     }
