@@ -110,6 +110,11 @@ func (l *LogWatcher) handleWrite() error {
     l.sliceLines(bufferOffset)
   }
 
+  if l.log != nil {
+    l.log.Close()
+    l.log = nil
+  }
+
   return nil
 }
 
