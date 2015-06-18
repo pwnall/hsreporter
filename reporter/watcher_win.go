@@ -4,6 +4,7 @@ package reporter
 
 import (
   "fmt"
+  "path/filepath"
   notify "github.com/rjeczalik/notify"
 )
 
@@ -25,7 +26,7 @@ func (w *SysWatcher) Init(logWatcher *LogWatcher) error {
 
 // Start kicks off the OS-depenent filesystem event listener.
 func (w *SysWatcher) Start(logFile string) error {
-  return notify.Watch(logFile, w.fsEvents, notify.All)
+  return notify.Watch(filepath.Dir(logFile), w.fsEvents, notify.All)
 }
 
 // Stop stops the OS-dependent filesystem listener.
