@@ -1,9 +1,10 @@
-// +build arm
+// +build !arm
 
 package reporter
 
 import (
   "fmt"
+  "path/filepath"
   fsnotify "gopkg.in/fsnotify.v1"
 )
 
@@ -29,12 +30,12 @@ func (w *SysWatcher) Init(logWatcher *LogWatcher) error {
 
 // Start kicks off the OS-depenent filesystem event listener.
 func (w *SysWatcher) Start(logFile string) error {
-  return w.fsWatcher.Add(logFile)
+  return w.fsWatcher.Add(filepath.Dir(logFile))
 }
 
 // Stop stops the OS-dependent filesystem listener.
 func (w *SysWatcher) Stop(logFile string) error {
-  return w.fsWatcher.Remove(logFile)
+  return w.fsWatcher.Remove(filepath.Dir(logFile))
 }
 
 // ListenLoop repeatedly listens for filesystem events and acts on them.
@@ -55,3 +56,4 @@ func (w *SysWatcher) ListenLoop() {
     }
   }
 }
+
