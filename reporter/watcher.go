@@ -2,7 +2,6 @@ package reporter
 
 import (
   "bytes"
-  "fmt"
   "os"
   fsnotify "gopkg.in/fsnotify.v1"
 )
@@ -73,47 +72,8 @@ func (l *LogWatcher) Stop() error {
   return nil
 }
 
-// listenLoop repeatedly listens for filesystem events and acts on them.
-func (l *LogWatcher) listenLoop() {
-  for {
-    select {
-    case fsEvent := <- l.fsWatcher.Events:
-      if err := l.handleEvent(&fsEvent); err != nil {
-        l.errors <- err
-      }
-    case fsError := <- l.fsWatcher.Errors:
-      l.errors <- fsError
-    case command := <- l.commands:
-      if command == 1 {
-        break
-      }
-    }
-  }
-}
-
-func (l *LogWatcher) handleEvent(event *fsnotify.Event) error {
-  switch event.Op {
-  case fsnotify.Write:
-    return l.handleWrite()
-  case fsnotify.Chmod:
-    // NOTE: Chmod tends to happen when the game starts and when a match
-    //       starts. It might be associated with the file getting truncated.
-    //       For now, treating it as a write seems to work.
-    return l.handleWrite()
-  }
-  l.errors <- fmt.Errorf("Unexpected event: %v\n", event)
-  return nil
-}
-
-// handleWrite is called when the log file is updated.
-func (l *LogWatcher) handleWrite() error {
-  var err error
-  if l.log == nil {
-    l.log, err = os.OpenFile(l.logFile, os.O_RDONLY, 0644)
-    if err != nil {
-      return err
-    }
-  }
+// tailLog reads the newly appended data from the log file.
+func (l *LogWatcher) tailLog() error {
   fileInfo, err := l.log.Stat()
   if err != nil {
     return err
@@ -146,7 +106,6 @@ func (l *LogWatcher) handleWrite() error {
 
     l.sliceLines(bufferOffset)
   }
-
   return nil
 }
 
