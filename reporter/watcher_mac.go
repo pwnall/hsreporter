@@ -1,10 +1,10 @@
-// +build arm
+// +build !arm
 
 package reporter
 
 import (
   "fmt"
-  fsnotify "gopkg.in/fsnotify.v1"
+  fsnotify "github.com/pwnall/fsnotify"
 )
 
 // OS-dependent log watcher data structures.
