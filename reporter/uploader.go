@@ -8,6 +8,7 @@ import (
   "fmt"
   "io/ioutil"
   "net/http"
+  "strconv"
   "strings"
 )
 
@@ -26,8 +27,10 @@ type Uploader struct {
   url string
   // The Authorization HTTP header value.
   authHeader string
-  // The X-HsReport-Sess HTTP header value.
-  sessHeader string
+  // The nonce in the X-HsReport-ID HTTP header value.
+  idNonce string
+  // The sequence number in the X-HsReport-ID HTTP header value.
+  idSequence int64
   // Source for Hearthstone's logging output.
   logLines <-chan []byte
   // Sink for HTTP errors.
@@ -54,28 +57,31 @@ func(u *Uploader) Errors() <-chan error {
 //
 // It returns any error encountered.
 func (u *Uploader) FetchConfig() error {
-  // NOTE: It'd be more natural to generate the upload session ID in Init().
+  // NOTE: It'd be more natural to generate the upload session nonce in Init().
   //       However, that'd require having Init() return an error. Generating a
-  //       new session ID whenever we get the logging configuration seems
+  //       new session nonce whenever we get the logging configuration seems
   //       reasonable enough.
   sessionBytes := make([]byte, 16)
   if _, err := rand.Read(sessionBytes); err != nil {
     return err
   }
-  u.sessHeader = strings.TrimRight(
+  u.idNonce = strings.TrimRight(
       base64.URLEncoding.EncodeToString(sessionBytes), "=")
+  u.idSequence = 0
 
   request, err := http.NewRequest("GET", u.url, nil)
   if err != nil {
     return err
   }
   request.Header.Add("Authorization", u.authHeader)
-  request.Header.Add("X-HsReport-Sess", u.sessHeader)
+  request.Header.Add("X-HsReport-Id", u.idNonce + " " +
+                     strconv.FormatInt(u.idSequence, 10))
 
   response, err := u.httpClient.Do(request)
   if err != nil {
     return fmt.Errorf("Error communicating to server: %v", err)
   }
+  u.idSequence += 1
 
   jsonBytes, err := ioutil.ReadAll(response.Body)
   response.Body.Close()
@@ -123,13 +129,15 @@ func (u *Uploader) uploadLoop() {
     }
     request.Header.Add("Authorization", u.authHeader)
     request.Header.Add("Content-Type", "application/octet-stream")
-    request.Header.Add("X-HsReport-Sess", u.sessHeader)
+    request.Header.Add("X-HsReport-Id", u.idNonce + " " +
+                       strconv.FormatInt(u.idSequence, 10))
 
     postSucceeded := false
     for attemptsLeft := 3; attemptsLeft > 0; attemptsLeft -= 1 {
       response, err := u.httpClient.Do(request)
       if err == nil {
         response.Body.Close()
+        u.idSequence += 1
         postSucceeded = true
         break
       }
