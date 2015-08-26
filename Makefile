@@ -2,7 +2,7 @@
 #
 # You can build a binary for your platform using the standard "go build"
 
-APPNAME=$(basename $(PWD))
+APPNAME=$(notdir $(PWD))
 
 dist:
 	mkdir -p dist/
