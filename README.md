@@ -39,9 +39,10 @@ requests at the same URL.
 
 hsreporter requests include the following headers:
 
-* `Authorization` is set to `Token xxxxxxxxxxx`, following the
-  [Token Access Authentication](https://tools.ietf.org/html/draft-hammer-http-token-auth-01)
-  RFC draft.
+* `Authorization` is set to `Token xxxxxxxxxxx`, following an old version of
+  the [Bearer Token Usage](https://tools.ietf.org/html/rfc6750) RFC, namely
+  [Token Access Authentication](https://tools.ietf.org/html/draft-hammer-http-token-auth-01).
+  This is likely to change when Ruby on Rails 5 is released.
 * `X-HsReport-Id` consists of a random nonce and a sequence number, separated
    by a space.
     * The random nonce that gets reset every time the program starts. It is
@@ -54,16 +55,30 @@ hsreporter requests include the following headers:
       It is provided to help the Web server detect situations where an
       intermediary HTTP proxy, such as a load balancer, drops hsreporter's POST
       requests, causing the server to miss logging output.
+* `X-HsReport-Proto` is only sent for GET requests, and contains the protocol
+  version implemented by the reporter. The server SHOULD reject clients whose
+  protocol version does not match the version it understands. The server SHOULD
+  include an error message that describes the problem.
 
 When starting, hsreporter will send an HTTP `GET` request to the provided
 server URL. The server must produce a JSON response containing the Hearthstone
-logging categories that should be uploaded. This gives the server a way to
-reduce the upload bandwidth, by only asking for information that it knows how
-to parse.
+game and network logging categories that should be uploaded. This gives the
+server a way to reduce the upload bandwidth, by only asking for information
+that it knows how to parse.
 
 ```json
 {
   "categories": ["Power", "Zone"]
+}
+```
+
+If the server can handle de-duplicating old game reports, it SHOULD ask the
+reporter to upload the game log data that exists when the log is started.
+
+```json
+{
+  "categories": ["Power", "Zone"],
+  "existingData": true
 }
 ```
 

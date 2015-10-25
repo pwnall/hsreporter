@@ -63,7 +63,7 @@ func (l *LogWatcher) handleWrite() error {
 func (l *LogWatcher) reportLine(line []byte) {
   // Skip lines that don't start with a [. All lines must end in a newline, so
   // they should be at least 2 bytes long.
-  if len(line) < 2 || line[0] != byte('[') {
+  if len(line) < 2 || (l.filterLines && line[0] != byte('[')) {
     return
   }
 

@@ -12,7 +12,7 @@ type LogWatcher struct {
   // Filesystem notifications client.
   fsWatcher *fsnotify.Watcher
   // Sink for the lines written to the log file.
-  logLines chan []byte
+  logLines chan<- []byte
   // Tells the log watch loop when to stop.
   commands chan int
   // Sink for errors encountered by the log file watching loop.
@@ -23,17 +23,21 @@ type LogWatcher struct {
   readOffset int64
   // The buffer used to read from the file.
   lineBuffer []byte
+  // True if lines that don't start with [ should be discarded.
+  filterLines bool
 }
 
 // Init sets up the filesystem watcher.
-func (l *LogWatcher) Init(logFile string) error {
+func (l *LogWatcher) Init(logFile string, filterLines bool,
+    logLines chan<- []byte) error {
   l.logFile = logFile
+  l.logLines = logLines
+
   var err error
   l.fsWatcher, err = fsnotify.NewWatcher()
   if err != nil {
     return err
   }
-  l.logLines = make(chan []byte, 1024)
 
   l.readOffset = -1
   l.lineBuffer = make([]byte, 4096)[:0]
@@ -41,14 +45,19 @@ func (l *LogWatcher) Init(logFile string) error {
   return nil
 }
 
-// LogLines returns the channel that produces Hearthstone's logging output.
-func (l *LogWatcher) LogLines() <-chan []byte {
-  return l.logLines
-}
-
 // Errors returns the channel for errors encountered while watching the log.
 func (l *LogWatcher) Errors() <-chan error {
   return l.errors
+}
+
+// ReportExistingData configures the watcher to dump the initial file contents.
+//
+// By default, a log watcher only reports data written to the watched file
+// after Start is called.
+func (l *LogWatcher) ReportExistingData() {
+  if l.readOffset == -1 {
+    l.readOffset = 0
+  }
 }
 
 // Start spawns a goroutine that listens for log-related filesystem events.

@@ -16,6 +16,7 @@ import (
 type ServerConfig struct {
   Categories []string
   Error string
+  ExistingData bool
 }
 
 // The logic for uploading logging output to a HTTP endpoint.
@@ -31,7 +32,7 @@ type Uploader struct {
   idNonce string
   // The sequence number in the X-HsReport-ID HTTP header value.
   idSequence int64
-  // Source for Hearthstone's logging output.
+  // Source for Hearthstone's combined game and network logging output.
   logLines <-chan []byte
   // Sink for HTTP errors.
   errors chan error
@@ -76,6 +77,7 @@ func (u *Uploader) FetchConfig() error {
   request.Header.Add("Authorization", u.authHeader)
   request.Header.Add("X-HsReport-Id", u.idNonce + " " +
                      strconv.FormatInt(u.idSequence, 10))
+  request.Header.Add("X-HsReport-Proto", "1")
 
   response, err := u.httpClient.Do(request)
   if err != nil {

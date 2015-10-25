@@ -39,7 +39,7 @@ func (l *LogWatcher) handleWrite() error {
 
 // reportLine sends the line information over the channel.
 func (l *LogWatcher) reportLine(line []byte) {
-  if len(line) == 0 || line[0] != byte('[') {
+  if len(line) == 0 || (l.filterLines && line[0] != byte('[')) {
     // Skip lines that don't start with a [
     return
   }

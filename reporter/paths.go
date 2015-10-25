@@ -28,10 +28,10 @@ func DefaultConfigFile() string {
   return ""
 }
 
-// DefaultLogPath returns the path to Hearthstone's logging output file.
+// DefaultGameLogFile returns the path to Hearthstone's game logging file.
 //
 // It returns the expected file path, assuming a standard game installation.
-func DefaultLogFile() string {
+func DefaultGameLogFile() string {
   // Windows attempts.
   for _, programDir := range []string{"Program Files (x86)", "Program Files"} {
     dataDir := filepath.Join("C:", programDir, "Hearthstone",
@@ -46,6 +46,28 @@ func DefaultLogFile() string {
   _, err := os.Stat(filepath.Join(homeDir, "Library"))
   if homeDir != "" && err == nil {
     return filepath.Join(homeDir, "Library", "Logs", "Unity", "Player.log")
+  }
+
+  // Failed to find a default path.
+  return ""
+}
+
+// DefaultNetLogFile returns the path to Hearthstone's network logging file.
+//
+// It returns the expected file path, assuming a standard game installation.
+func DefaultNetLogFile() string {
+  // Windows attempts.
+  for _, programDir := range []string{"Program Files (x86)", "Program Files"} {
+    dataDir := filepath.Join("C:", programDir, "Hearthstone")
+    if _, err := os.Stat(dataDir); err == nil {
+      return filepath.Join(dataDir, "ConnectLog.txt")
+    }
+  }
+
+  // OSX attempt.
+  appDir := "/Applications/Hearthstone"
+  if _, err := os.Stat(appDir); err == nil {
+    return filepath.Join(appDir, "ConnectLog.txt")
   }
 
   // Failed to find a default path.
