@@ -31,6 +31,7 @@ type LogWatcher struct {
 func (l *LogWatcher) Init(logFile string, filterLines bool,
     logLines chan<- []byte) error {
   l.logFile = logFile
+  l.filterLines = filterLines
   l.logLines = logLines
 
   var err error
